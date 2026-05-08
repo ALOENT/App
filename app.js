@@ -971,7 +971,7 @@ function createTaskElement(task) {
         ${task.recurrence && task.recurrence !== 'none' ? '<span class="task-category-badge">🔁</span>' : ''}
         ${task.notes ? '<span class="task-category-badge">📝</span>' : ''}
       </div>
-      ${task.notes ? `<div class="task-notes-display visible">${task.notes}</div>` : ''}
+      ${task.notes ? `<div class="task-notes-display visible">${sanitize(task.notes)}</div>` : ''} <!-- Sanitized to prevent XSS -->
     </div>
     <div class="task-actions">
       <button class="action-btn subtasks-btn" title="Toggle Subtasks">
