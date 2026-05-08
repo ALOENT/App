@@ -677,6 +677,7 @@ async function addTask() {
     : null;
 
   taskInput.value = '';
+  const notesValue = taskNotesInput ? taskNotesInput.value.trim() : '';
   if (taskNotesInput) {
     taskNotesInput.value = '';
     const noteUI = document.getElementById('note-ui-container');
@@ -694,7 +695,7 @@ async function addTask() {
     // Prepare task data
     const taskData = {
       text: sanitize(text),
-      notes: taskNotesInput && taskNotesInput.value.trim() ? sanitize(taskNotesInput.value.trim()) : '',
+      notes: notesValue ? sanitize(notesValue) : '',
       category,
       priority: prioritySelect ? prioritySelect.value : 'medium',
       subtasks: [],
@@ -970,6 +971,7 @@ function createTaskElement(task) {
         ${task.recurrence && task.recurrence !== 'none' ? '<span class="task-category-badge">🔁</span>' : ''}
         ${task.notes ? '<span class="task-category-badge">📝</span>' : ''}
       </div>
+      ${task.notes ? `<div class="task-notes-display visible">${task.notes}</div>` : ''}
     </div>
     <div class="task-actions">
       <button class="action-btn subtasks-btn" title="Toggle Subtasks">
@@ -1389,8 +1391,8 @@ function renderTasks() {
     active = [];
     completed = filtered;
   } else {
-    active = filtered.filter(t => !t.completed);
-    completed = filtered.filter(t => t.completed);
+    active = filtered.filter(t => t.completed === false || t.completed === undefined || t.completed === null);
+    completed = filtered.filter(t => t.completed === true);
   }
 
   activeTaskList.innerHTML = '';
