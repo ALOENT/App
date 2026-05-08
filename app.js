@@ -965,7 +965,7 @@ function createTaskElement(task) {
   item.dataset.priority = safeTask.priority;
   
   // Explicit boolean checks for classes
-  if (safeTask.completed === true) item.classList.add('completed');
+  if (safeTask.completed === true) item.classList.add('completed-item');
   if (isOverdue(safeTask) === true) item.classList.add('overdue-item');
 
   const cat = CATEGORIES.find(c => c.id === safeTask.category) || CATEGORIES[5];
