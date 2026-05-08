@@ -81,26 +81,24 @@ export async function scheduleTaskReminder(task) {
         }
       }
 
+      // 3. Ensure the date is still in the future
       const now = Date.now();
       const scheduledDate = new Date(reminderDate.getTime());
       
-      const notificationTitle = `⏰ ${task.text || task.title || 'Task Reminder'}`;
-      const notificationBody = task.notes || task.description || 'You have a pending task';
-
-      console.log('[DEBUG] Native Notification Prep:', {
+      console.log('[DEBUG] Scheduling native notification:', {
         taskId: task.id,
-        rawTask: task, // Log full object as requested
-        finalTitle: notificationTitle,
-        finalBody: notificationBody,
-        scheduledFor: scheduledDate.toString()
+        notificationId: notificationId,
+        reminderTime: task.reminderTime,
+        scheduledFor: scheduledDate.toString(),
+        msUntil: scheduledDate.getTime() - now
       });
 
       // 4. Schedule via Capacitor
       await LocalNotifications.schedule({
         notifications: [{
           id: notificationId,
-          title: notificationTitle,
-          body: notificationBody,
+          title: `⏰ ${task.text || task.title || 'Task Reminder'}`,
+          body: task.notes ? task.notes : 'Time to get things done!',
           schedule: { at: scheduledDate },
           sound: 'default',
           actionTypeId: '',
