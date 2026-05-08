@@ -60,24 +60,45 @@ export async function scheduleTaskReminder(task) {
   if (isNative()) {
     // ── NATIVE (Capacitor) ──
     try {
-      // Request permission first (no-op if already granted)
-      const permResult = await LocalNotifications.requestPermissions();
-      if (permResult.display !== 'granted') {
-        console.warn('Notification permission denied');
-        return null;
+      // 1. Check current permission status
+      const check = await LocalNotifications.checkPermissions();
+      console.log('Current notification permissions:', check);
+
+      // 2. Request permission if not already granted (Android 13+ support)
+      if (check.display !== 'granted') {
+        const request = await LocalNotifications.requestPermissions();
+        if (request.display !== 'granted') {
+          console.warn('Notification permission denied after request');
+          return null;
+        }
       }
 
+      // 3. Ensure the date is still in the future
+      const now = Date.now();
+      const scheduledDate = new Date(reminderDate.getTime());
+      
+      console.log('[DEBUG] Scheduling native notification:', {
+        taskId: task.id,
+        notificationId: notificationId,
+        reminderTime: task.reminderTime,
+        scheduledFor: scheduledDate.toString(),
+        msUntil: scheduledDate.getTime() - now
+      });
+
+      // 4. Schedule via Capacitor
       await LocalNotifications.schedule({
         notifications: [{
           id: notificationId,
           title: 'TaskFlow Reminder 🔔',
           body: `Time to: ${task.title}`,
-          schedule: { at: reminderDate },
+          schedule: { at: scheduledDate },
           sound: 'default',
           actionTypeId: '',
           extra: { taskId: task.id }
         }]
       });
+      
+      console.log(`[SUCCESS] Notification ${notificationId} scheduled for task ${task.id}`);
     } catch (err) {
       console.error('Error scheduling native notification:', err);
       return null;
@@ -211,4 +232,19 @@ export async function registerServiceWorker() {
       console.warn('Service worker registration failed:', err);
     }
   }
+}
+
+// ============================================
+//  TEST NOTIFICATION
+//  Schedules a dummy notification 10 seconds from now
+// ============================================
+export async function testNotification() {
+  const tenSecsFromNow = new Date(Date.now() + 10000);
+  console.log('Scheduling test notification for:', tenSecsFromNow.toString());
+  
+  return await scheduleTaskReminder({
+    id: 'test-notif-' + Date.now(),
+    title: 'Test Notification 🧪',
+    reminderTime: tenSecsFromNow.toISOString()
+  });
 }

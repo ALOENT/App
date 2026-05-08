@@ -14,8 +14,12 @@ import {
 
 import {
   scheduleTaskReminder, cancelTaskReminder,
-  rescheduleAllReminders, registerServiceWorker
+  rescheduleAllReminders, registerServiceWorker,
+  testNotification
 } from './notifications.js';
+
+// Expose testNotification to window for easy debugging
+window.testNotif = testNotification;
 
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.css';
