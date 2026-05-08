@@ -944,34 +944,51 @@ function formatReminderTime(isoString) {
 }
 
 function createTaskElement(task) {
+  // Defensive check and defaults
+  if (!task) return document.createElement('div');
+  
+  const safeTask = {
+    id: task.id || `temp-${Date.now()}`,
+    text: task.text || task.title || 'Untitled',
+    notes: task.notes || '',
+    priority: task.priority || 'none',
+    category: task.category || 'other',
+    completed: !!task.completed,
+    subtasks: Array.isArray(task.subtasks) ? task.subtasks : [],
+    reminderTime: task.reminderTime || null,
+    recurrence: task.recurrence || 'none'
+  };
+
   const item = document.createElement('div');
   item.className = 'task-item';
-  item.dataset.id = task.id;
-  item.dataset.priority = task.priority || 'none';
-  if (task.completed) item.classList.add('completed');
-  if (isOverdue(task)) item.classList.add('overdue-item');
+  item.dataset.id = safeTask.id;
+  item.dataset.priority = safeTask.priority;
+  
+  // Explicit boolean checks for classes
+  if (safeTask.completed === true) item.classList.add('completed');
+  if (isOverdue(safeTask) === true) item.classList.add('overdue-item');
 
-  const cat = CATEGORIES.find(c => c.id === task.category) || CATEGORIES[5];
-  const subtasksCount = task.subtasks ? task.subtasks.length : 0;
-  const completedSubtasks = task.subtasks ? task.subtasks.filter(s => s.completed).length : 0;
-  const isOverdueTask = isOverdue(task);
+  const cat = CATEGORIES.find(c => c.id === safeTask.category) || CATEGORIES[5];
+  const subtasksCount = safeTask.subtasks.length;
+  const completedSubtasks = safeTask.subtasks.filter(s => s.completed).length;
+  const isOverdueTask = isOverdue(safeTask);
 
-  const prioLabel = (task.priority||'medium').charAt(0).toUpperCase()+(task.priority||'medium').slice(1);
-  const prioIcon = {high:'🔴',medium:'🟠',low:'🟢'}[task.priority||'medium'];
+  const prioLabel = safeTask.priority === 'none' ? 'None' : safeTask.priority.charAt(0).toUpperCase() + safeTask.priority.slice(1);
+  const prioIcon = { high: '🔴', medium: '🟠', low: '🟢', none: '⚪' }[safeTask.priority] || '⚪';
 
   item.innerHTML = `
-    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
+    <input type="checkbox" class="task-checkbox" ${safeTask.completed ? 'checked' : ''}>
     <div class="task-content">
-      <div class="task-text">${task.text || task.title || 'Untitled'}</div>
+      <div class="task-text">${safeTask.text}</div>
       <div class="task-meta">
         <span class="task-category-badge">${cat.icon} ${cat.label}</span>
-        <span class="task-category-badge priority-${task.priority || 'medium'}">${prioIcon} ${prioLabel}</span>
+        <span class="task-category-badge priority-${safeTask.priority}">${prioIcon} ${prioLabel}</span>
         ${subtasksCount > 0 ? `<span class="task-category-badge subtask-badge">${completedSubtasks}/${subtasksCount} subtasks</span>` : ''}
-        ${task.reminderTime ? `<span class="task-reminder-badge${isOverdueTask ? ' overdue' : ''}">${isOverdueTask ? '⏰ Overdue' : '🔔 ' + formatReminderTime(task.reminderTime)}</span>` : ''}
-        ${task.recurrence && task.recurrence !== 'none' ? '<span class="task-category-badge">🔁</span>' : ''}
-        ${task.notes ? '<span class="task-category-badge">📝</span>' : ''}
+        ${safeTask.reminderTime ? `<span class="task-reminder-badge${isOverdueTask ? ' overdue' : ''}">${isOverdueTask ? '⏰ Overdue' : '🔔 ' + formatReminderTime(safeTask.reminderTime)}</span>` : ''}
+        ${safeTask.recurrence && safeTask.recurrence !== 'none' ? '<span class="task-category-badge">🔁</span>' : ''}
+        ${safeTask.notes ? '<span class="task-category-badge">📝</span>' : ''}
       </div>
-      ${task.notes ? `<div class="task-notes-display"></div>` : ''}
+      ${safeTask.notes ? `<div class="task-notes-display"></div>` : ''}
     </div>
     <div class="task-actions">
       <button class="action-btn subtasks-btn" title="Toggle Subtasks">
@@ -994,19 +1011,19 @@ function createTaskElement(task) {
 
   // Safe notes render using textContent (XSS-safe, no sanitize needed)
   const notesEl = item.querySelector('.task-notes-display');
-  if (notesEl && task.notes) {
-    notesEl.textContent = task.notes;
+  if (notesEl && safeTask.notes) {
+    notesEl.textContent = safeTask.notes;
   }
 
   // Attach event listeners
   const checkbox = item.querySelector('.task-checkbox');
-  checkbox.addEventListener('change', () => toggleTask(task.id));
+  checkbox.addEventListener('change', () => toggleTask(safeTask.id));
 
   const editBtn = item.querySelector('.edit-btn');
-  editBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleEditMode(task); });
+  editBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleEditMode(safeTask); });
 
   const deleteBtn = item.querySelector('.delete-btn');
-  deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteTask(task.id); });
+  deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteTask(safeTask.id); });
 
   const subBtn = item.querySelector('.subtasks-btn');
   const subContainer = item.querySelector('.subtasks-container');
@@ -1020,23 +1037,23 @@ function createTaskElement(task) {
     subBtn.querySelector('polyline').setAttribute('points', isHidden ? "18 15 12 9 6 15" : "6 9 12 15 18 9");
   });
 
-  (task.subtasks || []).forEach(sub => {
+  safeTask.subtasks.forEach(sub => {
     const subItem = document.createElement('div');
     subItem.className = 'subtask-item' + (sub.completed ? ' subtask-completed' : '');
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.className = 'subtask-checkbox';
-    checkbox.checked = sub.completed;
-    checkbox.addEventListener('change', () => toggleSubtask(task.id, sub.id));
+    checkbox.checked = !!sub.completed;
+    checkbox.addEventListener('change', () => toggleSubtask(safeTask.id, sub.id));
 
     const textSpan = document.createElement('span');
     textSpan.className = 'subtask-text';
-    textSpan.textContent = sub.text;
+    textSpan.textContent = sub.text || '';
 
     const delBtn = document.createElement('button');
     delBtn.className = 'subtask-delete-btn';
     delBtn.textContent = '×';
-    delBtn.addEventListener('click', () => deleteSubtask(task.id, sub.id));
+    delBtn.addEventListener('click', () => deleteSubtask(safeTask.id, sub.id));
 
     subItem.appendChild(checkbox);
     subItem.appendChild(textSpan);
@@ -1047,7 +1064,7 @@ function createTaskElement(task) {
   subInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && subInput.value.trim()) {
       e.preventDefault();
-      addSubtask(task.id, subInput.value.trim());
+      addSubtask(safeTask.id, subInput.value.trim());
     }
   });
 
@@ -1067,7 +1084,7 @@ function createTaskElement(task) {
     longPressFired = false;
     longPressTimer = setTimeout(() => {
       longPressFired = true;
-      showLongPressMenu(task, e.touches[0].clientX, e.touches[0].clientY);
+      showLongPressMenu(safeTask, e.touches[0].clientX, e.touches[0].clientY);
     }, 500);
   }, { passive: true });
   item.addEventListener('touchmove', () => {

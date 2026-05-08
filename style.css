@@ -876,7 +876,7 @@ select {
 .task-item.drag-over{border-top:3px solid var(--color-accent)}
 .task-item.completed-item{opacity:.7}
 .task-item.completed-item .task-text{text-decoration:line-through;color:var(--color-text-muted)}
-.task-item.overdue-item{border-color:#fca5a5;background:#fff5f5}
+.task-item.overdue-item{border-color:var(--color-danger);background:var(--color-danger-bg)}
 
 /* Checkbox */
 .task-checkbox{appearance:none;-webkit-appearance:none;width:22px;height:22px;min-width:22px;border:2px solid #d1d5db;border-radius:var(--radius-full);cursor:pointer;transition:all var(--transition-fast);position:relative;background:transparent;margin-top:2px;flex-shrink:0}
