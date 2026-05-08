@@ -14,3 +14,12 @@ ios/App/DerivedData/
 *.log
 opencode.*.json
 .antigravityignore
+# Firebase cache
+.firebase/
+
+# OpenCode AI tool configs
+opencode*.json
+
+# Environment variables
+.env
+.env.local
