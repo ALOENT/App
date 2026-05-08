@@ -817,8 +817,7 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 [data-theme="dark"] .task-notes-input{border-color:var(--color-border)}
 .toggle-notes-btn{background:none;border:none;color:var(--color-text-secondary);cursor:pointer;font-size:0.8rem;margin-top:6px;align-self:flex-start}
 .toggle-notes-btn:hover{color:var(--color-text-primary)}
-.task-notes-display{font-size:0.85rem;color:var(--color-text-secondary);margin-top:4px;padding:8px 12px;background:var(--color-bg);border-radius:var(--radius-sm);border-left:2px solid var(--color-accent);white-space:pre-wrap;display:none}
-.task-notes-display.visible{display:block}
+.task-notes-display{font-size:0.82rem;color:var(--color-text-secondary);margin-top:6px;padding:8px 10px;background:var(--color-search-bg);border-radius:var(--radius-sm);border-left:3px solid var(--color-accent);white-space:pre-wrap;line-height:1.5;opacity:0.9}
 .category-select,.reminder-input,#sheet-task-input,#sheet-priority-select,#sheet-category-select,#sheet-reminder-input,#sheet-recurrence-select{
   padding:10px 14px;
   font-size:16px;
