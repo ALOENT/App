@@ -24,6 +24,19 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 const webTimerMap = new Map();
 
 // ============================================
+//  ID GENERATION
+//  Returns a unique numeric ID for a task string ID
+// ============================================
+function getNotificationId(taskId) {
+  let hash = 0;
+  for (let i = 0; i < taskId.length; i++) {
+    hash = ((hash << 5) - hash) + taskId.charCodeAt(i);
+    hash |= 0; 
+  }
+  return Math.abs(hash) % 2147483647;
+}
+
+// ============================================
 //  PLATFORM DETECTION
 //  Returns true when running inside the Capacitor native shell
 // ============================================
@@ -50,12 +63,7 @@ export async function scheduleTaskReminder(task) {
   if (msUntil <= 0) return null;
 
   // Generate a unique numeric notification ID using a hash of task.id
-  let hash = 0;
-  for (let i = 0; i < task.id.length; i++) {
-    hash = ((hash << 5) - hash) + task.id.charCodeAt(i);
-    hash |= 0; 
-  }
-  const notificationId = Math.abs(hash) % 2147483647;
+  const notificationId = getNotificationId(task.id);
 
   if (isNative()) {
     // ── NATIVE (Capacitor) ──
@@ -185,36 +193,78 @@ export async function cancelTaskReminder(notificationId, taskId) {
   }
 }
 
-// ============================================
-//  RESCHEDULE ALL REMINDERS (on app startup)
-//
-//  Takes the full tasks array from Firestore.
-//  Filters for tasks that:
-//    - Have a reminderTime set
-//    - reminderTime is in the future
-//    - Task is not completed
-//  Schedules each one and returns a Map of taskId → notificationId
-//
-//  This is critical after phone restart or browser reload,
-//  because all in-memory timers / native notifications are lost.
-// ============================================
 export async function rescheduleAllReminders(tasks) {
   const results = new Map();
 
-  const pending = tasks.filter(t =>
+  // On native, we can check what's already scheduled to avoid duplicates
+  let pendingNativeIds = new Set();
+  if (isNative()) {
+    try {
+      const pending = await LocalNotifications.getPending();
+      pendingNativeIds = new Set(pending.notifications.map(n => n.id));
+      console.log(`[SYNC] Found ${pendingNativeIds.size} pending native notifications`);
+    } catch (err) {
+      console.warn('Failed to fetch pending notifications:', err);
+    }
+  }
+
+  const now = Date.now();
+  const tasksToSchedule = tasks.filter(t =>
     t.reminderTime &&
     !t.completed &&
-    new Date(t.reminderTime).getTime() > Date.now()
+    new Date(t.reminderTime).getTime() > now
   );
 
-  for (const task of pending) {
-    const notificationId = await scheduleTaskReminder(task);
-    if (notificationId != null) {
+  for (const task of tasksToSchedule) {
+    const notificationId = getNotificationId(task.id);
+    
+    // Skip if already scheduled on native
+    if (isNative() && pendingNativeIds.has(notificationId)) {
       results.set(task.id, notificationId);
+      continue;
+    }
+
+    // Skip if already scheduled on web (simple check)
+    if (!isNative() && webTimerMap.has(task.id)) {
+      results.set(task.id, notificationId);
+      continue;
+    }
+
+    const scheduledId = await scheduleTaskReminder(task);
+    if (scheduledId != null) {
+      results.set(task.id, scheduledId);
+    }
+  }
+
+  // Also clean up notifications for tasks that were completed on another device
+  const completedTasksWithReminders = tasks.filter(t => t.completed && t.reminderTime);
+  for (const task of completedTasksWithReminders) {
+    const notificationId = getNotificationId(task.id);
+    if (isNative() && pendingNativeIds.has(notificationId)) {
+      console.log(`[SYNC] Cancelling completed task reminder: ${task.id}`);
+      await cancelTaskReminder(notificationId, task.id);
+    } else if (!isNative() && webTimerMap.has(task.id)) {
+      await cancelTaskReminder(notificationId, task.id);
     }
   }
 
   return results;
+}
+
+// ============================================
+//  INITIALIZE PERMISSIONS (on app start)
+// ============================================
+export async function initNotifications() {
+  if (isNative()) {
+    try {
+      const check = await LocalNotifications.checkPermissions();
+      if (check.display !== 'granted') {
+        await LocalNotifications.requestPermissions();
+      }
+    } catch (err) {
+      console.error('Failed to init notifications:', err);
+    }
+  }
 }
 
 // ============================================

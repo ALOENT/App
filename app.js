@@ -15,7 +15,7 @@ import {
 import {
   scheduleTaskReminder, cancelTaskReminder,
   rescheduleAllReminders, registerServiceWorker,
-  testNotification
+  testNotification, initNotifications
 } from './notifications.js';
 
 // Expose testNotification to window for easy debugging
@@ -376,6 +376,9 @@ onAuthStateChanged(auth, (user) => {
     if (!overdueIntervalId) {
       overdueIntervalId = setInterval(() => { if (currentUser && tasks.length > 0) renderTasks(); }, 60000);
     }
+    
+    // Initialize notification permissions
+    initNotifications();
   } else {
     if (unsubscribeTasks) { unsubscribeTasks(); unsubscribeTasks = null; }
     if (overdueIntervalId) { clearInterval(overdueIntervalId); overdueIntervalId = null; }
@@ -644,15 +647,16 @@ function subscribeToTasks(uid) {
   unsubscribeTasks = onSnapshot(q, async (snapshot) => {
     tasks = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // On first load, reschedule all pending reminders
+    // On every snapshot, sync reminders for cross-device consistency
+    try {
+      await rescheduleAllReminders(tasks);
+    } catch (err) {
+      console.warn('Failed to sync reminders:', err);
+    }
+
     if (!initialLoadDone) {
       initialLoadDone = true;
       hideSkeleton();
-      try {
-        await rescheduleAllReminders(tasks);
-      } catch (err) {
-        console.warn('Failed to reschedule reminders:', err);
-      }
     }
     renderTasks();
   }, (err) => {
