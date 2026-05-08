@@ -97,8 +97,8 @@ export async function scheduleTaskReminder(task) {
       await LocalNotifications.schedule({
         notifications: [{
           id: notificationId,
-          title: 'TaskFlow Reminder 🔔',
-          body: `Time to: ${task.title}`,
+          title: `⏰ ${task.text || task.title || 'Task Reminder'}`,
+          body: task.notes ? task.notes : 'Time to get things done!',
           schedule: { at: scheduledDate },
           sound: 'default',
           actionTypeId: '',
@@ -136,19 +136,19 @@ export async function scheduleTaskReminder(task) {
         } else {
           const timeoutId = setTimeout(() => {
             if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-              navigator.serviceWorker.controller.postMessage({
-                type: 'SHOW_NOTIFICATION',
-                title: 'TaskFlow Reminder 🔔',
-                body: `Time to: ${task.title}`,
-                taskId: task.id
-              });
-            } else {
-              new Notification('TaskFlow Reminder 🔔', {
-                body: `Time to: ${task.title}`,
-                icon: '/favicon.ico',
-                tag: `task-${task.id}`
-              });
-            }
+                navigator.serviceWorker.controller.postMessage({
+                  type: 'SHOW_NOTIFICATION',
+                  title: `⏰ ${task.text || task.title || 'Task Reminder'}`,
+                  body: task.notes ? task.notes : 'Time to get things done!',
+                  taskId: task.id
+                });
+              } else {
+                new Notification(`⏰ ${task.text || task.title || 'Task Reminder'}`, {
+                  body: task.notes ? task.notes : 'Time to get things done!',
+                  icon: '/favicon.ico',
+                  tag: `task-${task.id}`
+                });
+              }
             webTimerMap.delete(task.id);
           }, delay);
           webTimerMap.set(task.id, timeoutId);
@@ -294,7 +294,8 @@ export async function testNotification() {
   
   return await scheduleTaskReminder({
     id: 'test-notif-' + Date.now(),
-    title: 'Test Notification 🧪',
+    text: 'Test Notification 🧪',
+    notes: 'This is a test to verify your notification settings.',
     reminderTime: tenSecsFromNow.toISOString()
   });
 }
