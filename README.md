@@ -212,6 +212,13 @@ Add to `android/app/src/main/AndroidManifest.xml`:
 
 ---
 
+## 🏗️TaskFlow Architecture Diagram
+
+<img width="2560" height="2624" alt="_C__Users_ISHANT_Downloads_taskflow-architecture html" src="https://github.com/user-attachments/assets/0ddd28f0-f961-47af-9baf-33ee0e7a7e3e" />
+
+---
+
+
 ## 👤 Author
 
 **Kanishk Garg**  
@@ -222,3 +229,4 @@ Add to `android/app/src/main/AndroidManifest.xml`:
 ## 📄 License
 
 This project is for personal and portfolio use.
+
