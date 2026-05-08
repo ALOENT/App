@@ -1,5 +1,0 @@
-{
-    "provider": "openrouter",
-    "apiKey": "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",
-    "model": "deepseek/deepseek-coder-6.7b-instruct"
-}
