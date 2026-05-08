@@ -1354,9 +1354,9 @@ function renderTasks() {
   let filtered = tasks;
 
   if (activeCategory === 'today') {
-    filtered = tasks.filter(t => !t.completed && t.reminderTime && new Date(t.reminderTime).toDateString() === todayStr);
+    filtered = tasks.filter(t => t.reminderTime && new Date(t.reminderTime).toDateString() === todayStr);
   } else if (activeCategory === 'upcoming') {
-    filtered = tasks.filter(t => !t.completed && t.reminderTime && new Date(t.reminderTime) > now);
+    filtered = tasks.filter(t => t.reminderTime && new Date(t.reminderTime) > now);
   } else if (activeCategory === 'completed') {
     filtered = tasks.filter(t => t.completed);
   } else if (activeCategory !== 'all') {
@@ -1391,8 +1391,8 @@ function renderTasks() {
     active = [];
     completed = filtered;
   } else {
-    active = filtered.filter(t => t.completed === false || t.completed === undefined || t.completed === null);
-    completed = filtered.filter(t => t.completed === true);
+    active = filtered.filter(t => !t.completed);
+    completed = filtered.filter(t => !!t.completed);
   }
 
   activeTaskList.innerHTML = '';
