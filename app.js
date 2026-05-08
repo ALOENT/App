@@ -971,7 +971,7 @@ function createTaskElement(task) {
         ${task.recurrence && task.recurrence !== 'none' ? '<span class="task-category-badge">🔁</span>' : ''}
         ${task.notes ? '<span class="task-category-badge">📝</span>' : ''}
       </div>
-      ${task.notes ? `<div class="task-notes-display">${sanitize(task.notes)}</div>` : ''} <!-- Sanitized to prevent XSS -->
+      ${task.notes ? `<div class="task-notes-display"></div>` : ''}
     </div>
     <div class="task-actions">
       <button class="action-btn subtasks-btn" title="Toggle Subtasks">
@@ -991,6 +991,12 @@ function createTaskElement(task) {
       </div>
     </div>
   `;
+
+  // Safe notes render using textContent (XSS-safe, no sanitize needed)
+  const notesEl = item.querySelector('.task-notes-display');
+  if (notesEl && task.notes) {
+    notesEl.textContent = task.notes;
+  }
 
   // Attach event listeners
   const checkbox = item.querySelector('.task-checkbox');
